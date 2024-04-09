@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
 
 
 def sigma_parse(source, item):
@@ -68,7 +69,7 @@ def lgc_parse(source, item):
     browser.execute_script("arguments[0].click();", search_button)
     sleep(2)
     research_tools_checkmark = [i for i in browser.find_elements(By.CLASS_NAME, 'form-container') if i.text.split('\n')[0] == 'Research Tools']
-    if research_tools_checkmark != []:
+    if research_tools_checkmark:
         research_tools_checkmark[0].click()
     sleep(2)
     sds_checkmark = [i for i in browser.find_elements(By.CLASS_NAME, 'form-container') if i.text.split('\n')[0] == 'SDS']
@@ -97,7 +98,7 @@ def usp_parse(source, item):
         collapsed_product.click()
     except:
         return f'\nA search of the {source} yielded no results...\n'
-    sleep(2)
+    sleep(2.5)
     sds = browser.find_element(By.PARTIAL_LINK_TEXT, 'Safety data sheet.pdf')
     sds.click()
     sleep(1.5)
@@ -107,24 +108,70 @@ def usp_parse(source, item):
     return f'\nResult from the {source}:\n{result}\n'
 
 
+# Here need to find solution for normal downloading process without hardcoding
 def abcam_parse(source, item):
-    pass
+    browser_options = Options()
+    prefs = {
+        "profile.default_content_setting_values.automatic_downloads": 1,
+        "download.default_directory": f"C:\\users\wentu\downloads\\{item}-sds-parse"
+    }
+    browser_options.add_experimental_option("prefs", prefs)
+    browser = webdriver.Chrome(browser_options)
+    browser.get(source)
+    sleep(1.5)
+    search_bar = browser.find_element(By.ID, 'searchfieldtop')
+    search_bar.send_keys(item)
+    search_button = browser.find_element(By.ID, 'btnSearch')
+    search_button.click()
+    sleep(2)
+    description_menu = [elem for elem in browser.find_elements(By.CLASS_NAME, 'h3') if 'Datasheets and documents' in elem.text]
+    if description_menu != [] and description_menu[0].is_enabled():
+        browser.execute_script("arguments[0].click();", description_menu[0])
+        sleep(0.3)
+        # Maybe better not specify exact country. If it will trigger an errors, need to change the code
+        select_country = browser.find_element(By.ID, 'pdf-links__select--country')
+        specified_country = [elem for elem in select_country.find_elements(By.TAG_NAME, 'option') if 'United' in elem.text]
+        specified_country[1].click()
+        sleep(0.3)
+        select_language = browser.find_element(By.ID, 'pdf-links__select--language')
+        specified_language = [elem for elem in select_language.find_elements(By.TAG_NAME, 'option') if 'Select language' not in elem.text]
+        specified_language[0].click()
+        sleep(0.3)
+
+        all_tags = [tag for tag in browser.find_elements(By.CLASS_NAME, 'pdf-links__sds-download-btn')]
+        counter = 1
+        print(f'\nResult from the {source}:\nTotal number of files: {len(all_tags)}')
+        for tag in all_tags:
+            browser.execute_script("arguments[0].click();", tag)
+            print(f"Download file №{counter} -> {tag.get_attribute('data-uri').split('/')[5]}")
+            counter += 1
+            sleep(0.5)
+        return ''
+    else:
+        return f'\nA search of the {source} yielded no results...\n'
 
 
 def main(item):
     print(f'\t\t\tWelcome! Searching for an item -> {item}')
-    print(sigma_parse(urls_db[0], item))
+    #print(sigma_parse(urls_db[0], item))
     #print(lgc_parse(urls_db[1], item))
     #print(usp_parse(urls_db[2], item))
-    #print(abcam_parse(urls_db[3], item))
+    print(abcam_parse(urls_db[3], item))
+    #print(xxx_parse(ulr_db[4], item)
     pass
 
 
-urls_db = ['https://www.sigmaaldrich.com', 'https://www.lgcstandards.com/US/en/', 'https://store.usp.org/', ]
-test_items = ['342920-50G', 'S0756-50MG', 'U829930', 'TRC-V097110-50MG', '1006801', '1499414', 'MM0084.01-0025', 'TRC-N424598-5G', 'U829930', 'TRC-E521160-500MG', '150495']
+urls_db = [
+    'https://www.sigmaaldrich.com',
+    'https://www.lgcstandards.com/US/en/',
+    'https://store.usp.org/',
+    'https://www.abcam.com/',
+]
+
+test_items = ['ab150686', 'MM0084.01-0025', 'TRC-N424598-5G', '150495']
 # Add the https://www.scientificlabs.ie/ to source list
 
 #x = input('Enter the catalog number: ')
 #main(x)
-main(test_items[0])
 
+main(test_items[0])
