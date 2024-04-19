@@ -1,4 +1,5 @@
 import re
+import requests
 
 from time import sleep
 
@@ -69,14 +70,16 @@ def lgc_parse(source, item):
     browser.execute_script("arguments[0].click();", search_button)
     sleep(2)
     research_tools_checkmark = [i for i in browser.find_elements(By.CLASS_NAME, 'form-container') if i.text.split('\n')[0] == 'Research Tools']
-    if research_tools_checkmark:
-        research_tools_checkmark[0].click()
+    if research_tools_checkmark != [] and research_tools_checkmark[0].is_enabled():
+        #research_tools_checkmark[0].click()
+        browser.execute_script("arguments[0].click();", research_tools_checkmark[0])
     sleep(2)
     sds_checkmark = [i for i in browser.find_elements(By.CLASS_NAME, 'form-container') if i.text.split('\n')[0] == 'SDS']
     if sds_checkmark == [] or sds_checkmark[0].text.split('\n')[1] == '0':
         return f'\nA search of the {source} yielded no results...\n'
     else:
-        sds_checkmark[0].click()
+        #sds_checkmark[0].click()
+        browser.execute_script("arguments[0].click();", sds_checkmark[0])
     sleep(2)
 
     soup = BeautifulSoup(browser.page_source, 'html.parser')
@@ -151,13 +154,40 @@ def abcam_parse(source, item):
         return f'\nA search of the {source} yielded no results...\n'
 
 
+def tci_parse(source, item):
+    browser = webdriver.Edge()
+    browser.get(source)
+    sleep(1.5)
+    search_bar = browser.find_element(By.ID, 'js-site-search-input')
+    search_bar.send_keys(item)
+    sleep(1.3)
+    search_button = browser.find_element(By.CLASS_NAME, 'js_search_button')
+    search_button.click()
+    sleep(1.3)
+    current_url = browser.current_url
+    browser.close()
+    sleep(0.3)
+    # Re-entry to site
+    browser = webdriver.Edge()
+    browser.get(current_url)
+    sleep(1.5)
+
+    item_page = browser.find_element(By.CLASS_NAME, 'text-concat')
+    if item_page.is_enabled() and item_page.tag_name == 'div':
+        item_page_href = item_page.find_element(By.TAG_NAME, 'a')
+        result = item_page_href.get_attribute('href')
+        return f'\nResult from the {source}:\n{result}\n'
+    else:
+        return f'\nA search of the {source} yielded no results...\n'
+
+
 def main(item):
     print(f'\t\t\tWelcome! Searching for an item -> {item}')
     #print(sigma_parse(urls_db[0], item))
     #print(lgc_parse(urls_db[1], item))
     #print(usp_parse(urls_db[2], item))
-    print(abcam_parse(urls_db[3], item))
-    #print(xxx_parse(ulr_db[4], item)
+    #print(abcam_parse(urls_db[3], item))
+    print(tci_parse(urls_db[4], item))
     pass
 
 
@@ -166,10 +196,16 @@ urls_db = [
     'https://www.lgcstandards.com/US/en/',
     'https://store.usp.org/',
     'https://www.abcam.com/',
+    'https://www.tcichemicals.com/US/en',
 ]
 
-test_items = ['ab150686', 'MM0084.01-0025', 'TRC-N424598-5G', '150495']
+test_items = ['M0795-25ML', 'ab150686', 'MM0084.01-0025', 'TRC-N424598-5G', '150495']
+
 # Add the https://www.scientificlabs.ie/ to source list
+# Add the https://www.merckmillipore.com/
+# https://www.aniara.com/ for brand "BIOPHEN"; Test cat item - 221802
+# https://www.progen.com/ for brand "PROGEN"
+# https://www.honeywell.com/us/en ---- https://lab.honeywell.com/en/sds
 
 #x = input('Enter the catalog number: ')
 #main(x)
