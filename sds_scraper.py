@@ -7,7 +7,10 @@ from bs4 import BeautifulSoup
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 
 def sigma_parse(source, item):
@@ -181,13 +184,35 @@ def tci_parse(source, item):
         return f'\nA search of the {source} yielded no results...\n'
 
 
+def progen_parse(source, item):
+    browser = webdriver.Chrome()
+    browser.get(source)
+    sleep(1.5)
+    search_icon = browser.find_element(By.ID, 'scrollToBannerSearch')
+    browser.execute_script("arguments[0].click();", search_icon)
+    sleep(1.5)
+    search_bar = browser.find_element(By.CLASS_NAME, 'dfd-searchbox-input')
+    search_bar.send_keys(item)
+    sleep(1.5)
+    item_pages = [elem for elem in browser.find_elements(By.CLASS_NAME, 'dfd-card-type-product')
+                  if item == elem.find_element(By.CLASS_NAME, 'dfd-card-id').text.split()[-1]]
+
+    if item_pages != [] and item_pages[0].is_enabled():
+        item_page = item_pages[0].find_element(By.TAG_NAME, 'a')
+        result = item_page.get_attribute('href')
+        return f'\nResult from the {source}:\n{result}\n'
+    else:
+        return f'\nA search of the {source} yielded no results...\n'
+
+
 def main(item):
     print(f'\t\t\tWelcome! Searching for an item -> {item}')
     #print(sigma_parse(urls_db[0], item))
     #print(lgc_parse(urls_db[1], item))
     #print(usp_parse(urls_db[2], item))
     #print(abcam_parse(urls_db[3], item))
-    print(tci_parse(urls_db[4], item))
+    #print(tci_parse(urls_db[4], item))
+    print(progen_parse(urls_db[5], item))
     pass
 
 
@@ -197,14 +222,17 @@ urls_db = [
     'https://store.usp.org/',
     'https://www.abcam.com/',
     'https://www.tcichemicals.com/US/en',
+    'https://www.progen.com',
 ]
 
-test_items = ['M0795-25ML', 'ab150686', 'MM0084.01-0025', 'TRC-N424598-5G', '150495']
+test_items = ['PRAAV3-C', 'ab150686', 'MM0084.01-0025', 'TRC-N424598-5G', '150495']
 
 # Add the https://www.scientificlabs.ie/ to source list
 # Add the https://www.merckmillipore.com/
 # https://www.aniara.com/ for brand "BIOPHEN"; Test cat item - 221802
-# https://www.progen.com/ for brand "PROGEN"
+# https://cymitquimica.com for TCI, Mikromol etc.
+
+# https://www.bdbiosciences.com to source list
 # https://www.honeywell.com/us/en ---- https://lab.honeywell.com/en/sds
 
 #x = input('Enter the catalog number: ')
