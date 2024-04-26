@@ -10,6 +10,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support import expected_conditions as EC
 
 
@@ -74,14 +75,12 @@ def lgc_parse(source, item):
     sleep(2)
     research_tools_checkmark = [i for i in browser.find_elements(By.CLASS_NAME, 'form-container') if i.text.split('\n')[0] == 'Research Tools']
     if research_tools_checkmark != [] and research_tools_checkmark[0].is_enabled():
-        #research_tools_checkmark[0].click()
         browser.execute_script("arguments[0].click();", research_tools_checkmark[0])
     sleep(2)
     sds_checkmark = [i for i in browser.find_elements(By.CLASS_NAME, 'form-container') if i.text.split('\n')[0] == 'SDS']
     if sds_checkmark == [] or sds_checkmark[0].text.split('\n')[1] == '0':
         return f'\nA search of the {source} yielded no results...\n'
     else:
-        #sds_checkmark[0].click()
         browser.execute_script("arguments[0].click();", sds_checkmark[0])
     sleep(2)
 
@@ -95,18 +94,18 @@ def lgc_parse(source, item):
 def usp_parse(source, item):
     browser = webdriver.Chrome()
     browser.get(source)
-    sleep(2.5)
+    sleep(1.5)
     search_bar = browser.find_element(By.CLASS_NAME, 'search-query')
     search_bar.send_keys(item)
-    sleep(1.5)
+    sleep(1)
     try:
         collapsed_product = browser.find_element(By.CLASS_NAME, 'typeaheadProductName')
         collapsed_product.click()
     except:
         return f'\nA search of the {source} yielded no results...\n'
     sleep(2.5)
-    sds = browser.find_element(By.PARTIAL_LINK_TEXT, 'Safety data sheet.pdf')
-    sds.click()
+    sds_page = browser.find_element(By.PARTIAL_LINK_TEXT, 'Safety data sheet.pdf')
+    browser.execute_script("arguments[0].click();", sds_page)
     sleep(1.5)
     all_open_tabs = browser.window_handles
     browser.switch_to.window(all_open_tabs[-1])
@@ -205,6 +204,35 @@ def progen_parse(source, item):
         return f'\nA search of the {source} yielded no results...\n'
 
 
+def honeywell_parse(source, item):
+    browser = webdriver.Chrome()
+    browser.get(source)
+    sleep(1.5)
+    country_navigate_button = browser.find_element(By.ID, 'countryNavigate')
+    browser.execute_script("arguments[0].click();", country_navigate_button)
+    sleep(1)
+    select_region = browser.find_element(By.LINK_TEXT, 'Europe')
+    browser.execute_script("arguments[0].click();", select_region)
+    sleep(1)
+    select_country = browser.find_element(By.LINK_TEXT, 'SWITZERLAND')
+    browser.execute_script("arguments[0].click();", select_country)
+    sleep(1)
+
+    search_bar = browser.find_element(By.CLASS_NAME, 'isc-button-wrap').find_element(By.TAG_NAME, 'input')
+    search_bar.send_keys(item, Keys.RETURN)
+    sleep(1)
+    try:
+        sds_page = browser.find_element(By.CLASS_NAME, 'sds-download')
+        browser.execute_script("arguments[0].click();", sds_page)
+        sleep(1.5)
+        all_open_tabs = browser.window_handles
+        browser.switch_to.window(all_open_tabs[-1])
+        result = browser.current_url
+        return f'\nResult from the {source}:\n{result}\n'
+    except NoSuchElementException:
+        return f'\nA search of the {source} yielded no results...\n'
+
+
 def main(item):
     print(f'\t\t\tWelcome! Searching for an item -> {item}')
     #print(sigma_parse(urls_db[0], item))
@@ -212,7 +240,8 @@ def main(item):
     #print(usp_parse(urls_db[2], item))
     #print(abcam_parse(urls_db[3], item))
     #print(tci_parse(urls_db[4], item))
-    print(progen_parse(urls_db[5], item))
+    #print(progen_parse(urls_db[5], item))
+    print(honeywell_parse(urls_db[6], item))
     pass
 
 
@@ -223,9 +252,10 @@ urls_db = [
     'https://www.abcam.com/',
     'https://www.tcichemicals.com/US/en',
     'https://www.progen.com',
+    'https://lab.honeywell.com/en/sds',
 ]
 
-test_items = ['PRAAV3-C', 'ab150686', 'MM0084.01-0025', 'TRC-N424598-5G', '150495']
+test_items = ['34828-40ML', 'ab150686', 'MM0084.01-0025', 'TRC-N424598-5G', '150495']
 
 # Add the https://www.scientificlabs.ie/ to source list
 # Add the https://www.merckmillipore.com/
@@ -233,9 +263,9 @@ test_items = ['PRAAV3-C', 'ab150686', 'MM0084.01-0025', 'TRC-N424598-5G', '15049
 # https://cymitquimica.com for TCI, Mikromol etc.
 
 # https://www.bdbiosciences.com to source list
-# https://www.honeywell.com/us/en ---- https://lab.honeywell.com/en/sds
 
 #x = input('Enter the catalog number: ')
 #main(x)
 
 main(test_items[0])
+
