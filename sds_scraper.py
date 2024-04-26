@@ -233,6 +233,43 @@ def honeywell_parse(source, item):
         return f'\nA search of the {source} yielded no results...\n'
 
 
+def biophen_parse(source, item):
+    browser = webdriver.Chrome()
+    browser.get(source)
+    sleep(1.5)
+    search_bar = browser.find_element(By.ID, 'l-Search')
+    search_bar.send_keys(item, Keys.RETURN)
+    sleep(0.5)
+    try:
+        sds_page = browser.find_element(By.PARTIAL_LINK_TEXT, 'MSDS')
+        result = sds_page.get_attribute('href')
+        return f'\nResult from the {source}:\n{result}\n'
+    except NoSuchElementException:
+        return f'\nA search of the {source} yielded no results...\n'
+
+
+def biorad_parse(source, item):
+    browser = webdriver.Chrome()
+    browser.get(source)
+    sleep(2)
+    decline_button = browser.find_element(By.LINK_TEXT, 'Decline')
+    browser.execute_script("arguments[0].click();", decline_button)
+    sleep(1)
+    search_bar = browser.find_element(By.ID, 'views-exposed-form-brc-acquia-search-brc-site-search').find_element(By.TAG_NAME, 'input')
+    search_bar.send_keys(item, Keys.RETURN)
+    sleep(1.5)
+    try:
+        pdf_button = browser.find_element(By.LINK_TEXT, 'Download PDF')
+        browser.execute_script("arguments[0].click();", pdf_button)
+        sleep(1)
+        all_open_tabs = browser.window_handles
+        browser.switch_to.window(all_open_tabs[-1])
+        result = browser.current_url
+        return f'\nResult from the {source}:\n{result}\n'
+    except NoSuchElementException:
+        return f'\nA search of the {source} yielded no results...\n'
+
+
 def main(item):
     print(f'\t\t\tWelcome! Searching for an item -> {item}')
     #print(sigma_parse(urls_db[0], item))
@@ -241,7 +278,9 @@ def main(item):
     #print(abcam_parse(urls_db[3], item))
     #print(tci_parse(urls_db[4], item))
     #print(progen_parse(urls_db[5], item))
-    print(honeywell_parse(urls_db[6], item))
+    #print(honeywell_parse(urls_db[6], item))
+    #print(biophen_parse(urls_db[7], item))
+    print(biorad_parse(urls_db[8], item))
     pass
 
 
@@ -253,15 +292,13 @@ urls_db = [
     'https://www.tcichemicals.com/US/en',
     'https://www.progen.com',
     'https://lab.honeywell.com/en/sds',
+    'https://www.aniara.com/product-documentation.html',
+    'https://www.bio-rad.com/'
 ]
 
-test_items = ['34828-40ML', 'ab150686', 'MM0084.01-0025', 'TRC-N424598-5G', '150495']
+test_items = ['1610700', 'ab150686', 'MM0084.01-0025', 'TRC-N424598-5G', '150495']
 
-# Add the https://www.scientificlabs.ie/ to source list
-# Add the https://www.merckmillipore.com/
-# https://www.aniara.com/ for brand "BIOPHEN"; Test cat item - 221802
 # https://cymitquimica.com for TCI, Mikromol etc.
-
 # https://www.bdbiosciences.com to source list
 
 #x = input('Enter the catalog number: ')
