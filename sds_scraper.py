@@ -217,10 +217,10 @@ def honeywell_parse(source, item):
     select_country = browser.find_element(By.LINK_TEXT, 'SWITZERLAND')
     browser.execute_script("arguments[0].click();", select_country)
     sleep(1)
-
     search_bar = browser.find_element(By.CLASS_NAME, 'isc-button-wrap').find_element(By.TAG_NAME, 'input')
     search_bar.send_keys(item, Keys.RETURN)
     sleep(1)
+
     try:
         sds_page = browser.find_element(By.CLASS_NAME, 'sds-download')
         browser.execute_script("arguments[0].click();", sds_page)
@@ -240,6 +240,7 @@ def biophen_parse(source, item):
     search_bar = browser.find_element(By.ID, 'l-Search')
     search_bar.send_keys(item, Keys.RETURN)
     sleep(0.5)
+
     try:
         sds_page = browser.find_element(By.PARTIAL_LINK_TEXT, 'MSDS')
         result = sds_page.get_attribute('href')
@@ -258,6 +259,7 @@ def biorad_parse(source, item):
     search_bar = browser.find_element(By.ID, 'views-exposed-form-brc-acquia-search-brc-site-search').find_element(By.TAG_NAME, 'input')
     search_bar.send_keys(item, Keys.RETURN)
     sleep(1.5)
+
     try:
         pdf_button = browser.find_element(By.LINK_TEXT, 'Download PDF')
         browser.execute_script("arguments[0].click();", pdf_button)
@@ -270,6 +272,39 @@ def biorad_parse(source, item):
         return f'\nA search of the {source} yielded no results...\n'
 
 
+def edqm_parse(source, item):
+    browser = webdriver.Chrome()
+    browser.get(source)
+    sleep(1.5)
+    search_option = browser.find_element(By.NAME, 'vSelectName')
+    search_option.send_keys('Catalogue Code')
+    search_type = browser.find_element(By.NAME, 'vContains')
+    search_type.send_keys('is exactly')
+    sleep(0.5)
+    search_bar = browser.find_element(By.NAME, 'vtUserName')
+    search_bar.send_keys(item, Keys.RETURN)
+    sleep(0.5)
+
+    try:
+        item_page = browser.find_element(By.LINK_TEXT, item)
+        browser.execute_script("arguments[0].click();", item_page)
+        sleep(0.5)
+        all_open_tabs = browser.window_handles
+        browser.switch_to.window(all_open_tabs[-1])
+
+        sds_list = [elem for elem in browser.find_elements(By.TAG_NAME, 'a') if 'click to download safety data sheet' in elem.text.lower()]
+        browser.execute_script("arguments[0].click();", sds_list[0])
+        all_open_tabs = browser.window_handles
+        browser.switch_to.window(all_open_tabs[-1])
+
+        all_links = [elem for elem in browser.find_elements(By.TAG_NAME, 'a') if 'SDS_' in elem.text]
+        english_link = [elem.get_attribute('href') for elem in all_links if elem.text.__contains__("EN")]
+        result = english_link[0] if english_link else all_links[0].get_attribute('href')
+        return f'\nResult from the {source}:\n{result}\n'
+    except (NoSuchElementException, IndexError):
+        return f'\nA search of the {source} yielded no results...\nIn this case, it means that the item is most likely not hazard\n'
+
+
 def main(item):
     print(f'\t\t\tWelcome! Searching for an item -> {item}')
     #print(sigma_parse(urls_db[0], item))
@@ -280,7 +315,8 @@ def main(item):
     #print(progen_parse(urls_db[5], item))
     #print(honeywell_parse(urls_db[6], item))
     #print(biophen_parse(urls_db[7], item))
-    print(biorad_parse(urls_db[8], item))
+    #print(biorad_parse(urls_db[8], item))
+    print(edqm_parse(urls_db[9], item))
     pass
 
 
@@ -293,13 +329,18 @@ urls_db = [
     'https://www.progen.com',
     'https://lab.honeywell.com/en/sds',
     'https://www.aniara.com/product-documentation.html',
-    'https://www.bio-rad.com/'
+    'https://www.bio-rad.com/',
+    'https://crs.edqm.eu/',
 ]
 
-test_items = ['1610700', 'ab150686', 'MM0084.01-0025', 'TRC-N424598-5G', '150495']
+test_items = ['P2660000', 'ab150686', 'MM0084.01-0025', 'TRC-N424598-5G', '150495']
+
+# https://chemicalsafety.com/sds-search/ - universal source, need to add
 
 # https://cymitquimica.com for TCI, Mikromol etc.
 # https://www.bdbiosciences.com to source list
+
+# need to add SUPELCO source
 
 #x = input('Enter the catalog number: ')
 #main(x)
