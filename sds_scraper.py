@@ -2,6 +2,7 @@ import re
 import requests
 
 from time import sleep
+from random import shuffle
 
 from bs4 import BeautifulSoup
 
@@ -305,6 +306,54 @@ def edqm_parse(source, item):
         return f'\nA search of the {source} yielded no results...\nIn this case, it means that the item is most likely not hazard\n'
 
 
+def chemicalsafety_parse(source, item):
+    browser = webdriver.Chrome()
+    browser.get(source)
+    sleep(1.5)
+    search_bar = browser.find_element(By.TAG_NAME, 'input') if browser.find_element(By.TAG_NAME, 'input').get_attribute('type') == 'text' else None
+    search_bar.send_keys(item, Keys.RETURN)
+    sleep(1)
+    result_block = browser.find_element(By.ID, 'cs_divResults')
+    if result_block.text == '':
+        return f'\nA search of the {source} yielded no results...\n'
+
+    all_tags = [elem for elem in browser.find_elements(By.TAG_NAME, 'td')]
+    all_links, intermediate_results = list(), list()
+    for tag in all_tags:
+        try:
+            elem = tag.find_element(By.TAG_NAME, 'a').get_attribute('href')
+            if elem and elem not in all_links:
+                all_links.append(elem)
+        except NoSuchElementException:
+            pass
+
+    browser.close()
+    length_all_links = len(all_links)
+    if length_all_links >= 7:
+        shuffle(all_links)
+        all_links = all_links[:6]
+
+    for link in all_links:
+        browser = webdriver.Chrome()
+        browser.get(link)
+        sleep(2)
+        try:
+            sds_button = browser.find_element(By.ID, 'sds_links').find_element(By.TAG_NAME, 'a')
+            result = sds_button.get_attribute('href')
+            intermediate_results.append(result)
+            browser.close()
+        except NoSuchElementException:
+            pass
+
+    results = f'\nThe {source} source gives {length_all_links} sds-documents, ' \
+              f'but we took only {len(intermediate_results)} to avoid slowing down the program:\n\n'
+    counter = 1
+    for result in intermediate_results:
+        results += f'{counter}. {result}\n'
+        counter += 1
+    return results
+
+
 def main(item):
     print(f'\t\t\tWelcome! Searching for an item -> {item}')
     #print(sigma_parse(urls_db[0], item))
@@ -316,7 +365,8 @@ def main(item):
     #print(honeywell_parse(urls_db[6], item))
     #print(biophen_parse(urls_db[7], item))
     #print(biorad_parse(urls_db[8], item))
-    print(edqm_parse(urls_db[9], item))
+    #print(edqm_parse(urls_db[9], item))
+    print(chemicalsafety_parse(urls_db[10], item)) # search by item name
     pass
 
 
@@ -331,19 +381,16 @@ urls_db = [
     'https://www.aniara.com/product-documentation.html',
     'https://www.bio-rad.com/',
     'https://crs.edqm.eu/',
+    'https://chemicalsafety.com/sds-search',
+    'https://uk.vwr.com/store/search/searchMSDS.jsp',
 ]
 
-test_items = ['P2660000', 'ab150686', 'MM0084.01-0025', 'TRC-N424598-5G', '150495']
-
-# https://chemicalsafety.com/sds-search/ - universal source, need to add
+test_items = ['Formaldehyd', 'P2660000', 'ab150686', 'MM0084.01-0025', 'TRC-N424598-5G', '150495']
 
 # https://cymitquimica.com for TCI, Mikromol etc.
 # https://www.bdbiosciences.com to source list
-
-# need to add SUPELCO source
 
 #x = input('Enter the catalog number: ')
 #main(x)
 
 main(test_items[0])
-
