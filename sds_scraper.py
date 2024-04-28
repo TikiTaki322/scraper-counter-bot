@@ -354,6 +354,22 @@ def chemicalsafety_parse(source, item):
     return results
 
 
+def vwr_parse(source, item):
+    browser = webdriver.Chrome()
+    browser.get(source)
+    sleep(1.5)
+    search_bar = browser.find_element(By.ID, 'msdsSearchPartNumber')
+    search_bar.send_keys(item, Keys.RETURN)
+    sleep(1.5)
+
+    try:
+        sds_button = [elem for elem in browser.find_elements(By.TAG_NAME, 'a') if 'View SDS' == elem.text]
+        result = sds_button[0].get_attribute('href')
+        return f'\nResult from the {source}:\n{result}\n'
+    except (NoSuchElementException, IndexError):
+        return f'\nA search of the {source} yielded no results...\n'
+
+
 def main(item):
     print(f'\t\t\tWelcome! Searching for an item -> {item}')
     #print(sigma_parse(urls_db[0], item))
@@ -366,7 +382,8 @@ def main(item):
     #print(biophen_parse(urls_db[7], item))
     #print(biorad_parse(urls_db[8], item))
     #print(edqm_parse(urls_db[9], item))
-    print(chemicalsafety_parse(urls_db[10], item)) # search by item name
+    #print(chemicalsafety_parse(urls_db[10], item)) # search by item name
+    print(vwr_parse(urls_db[11], item))
     pass
 
 
@@ -385,7 +402,7 @@ urls_db = [
     'https://uk.vwr.com/store/search/searchMSDS.jsp',
 ]
 
-test_items = ['Formaldehyd', 'P2660000', 'ab150686', 'MM0084.01-0025', 'TRC-N424598-5G', '150495']
+test_items = ['27727.231', 'Formaldehyd', 'P2660000', 'ab150686', 'MM0084.01-0025', 'TRC-N424598-5G', '150495']
 
 # https://cymitquimica.com for TCI, Mikromol etc.
 # https://www.bdbiosciences.com to source list
