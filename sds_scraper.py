@@ -53,43 +53,22 @@ def sigma_parse(source, item):
         return f'\nA search of the {source} yielded no results...\n'
 
 
-def lgc_parse(source, item):
+def cymitquimica_parse(source, item):
     browser = webdriver.Chrome()
     browser.get(source)
     sleep(1.5)
-    open_search = browser.find_element(By.CLASS_NAME, 'aa-DetachedSearchButton')
-    browser.execute_script("arguments[0].click();", open_search)
-    sleep(2)
-    search_bar = browser.find_element(By.CLASS_NAME, 'aa-Input')
-    search_bar.send_keys(item)
-    sleep(1.5)
-    # Checking if possible to get quickly sds after insertion the catalog number in search bar
-    sds_quick_access = [elem for elem in browser.find_elements(By.CLASS_NAME, 'product-info') if 'SDS' in elem.get_attribute('href').upper()]
-    if sds_quick_access != [] and sds_quick_access[0].is_enabled():
-        result = sds_quick_access[0].get_attribute('href')
+    try:
+        search_bar = browser.find_element(By.NAME, 'search') if 'text' == browser.find_element(By.NAME, 'search').get_attribute('type') else None
+        search_bar.send_keys(item, Keys.RETURN)
+        sleep(1)
+        item_page = browser.find_element(By.CLASS_NAME, 'js-product-link')
+        browser.execute_script("arguments[0].click();", item_page)
+        sleep(1.5)
+        sds_button = browser.find_element(By.CLASS_NAME, 'js-show-pdf-sds')
+        result = sds_button.get_attribute('href')
         return f'\nResult from the {source}:\n{result}\n'
-    else:
-        pass
-
-    search_button = browser.find_element(By.CLASS_NAME, 'aa-SubmitButton')
-    browser.execute_script("arguments[0].click();", search_button)
-    sleep(2)
-    research_tools_checkmark = [i for i in browser.find_elements(By.CLASS_NAME, 'form-container') if i.text.split('\n')[0] == 'Research Tools']
-    if research_tools_checkmark != [] and research_tools_checkmark[0].is_enabled():
-        browser.execute_script("arguments[0].click();", research_tools_checkmark[0])
-    sleep(2)
-    sds_checkmark = [i for i in browser.find_elements(By.CLASS_NAME, 'form-container') if i.text.split('\n')[0] == 'SDS']
-    if sds_checkmark == [] or sds_checkmark[0].text.split('\n')[1] == '0':
+    except (NoSuchElementException, AttributeError):
         return f'\nA search of the {source} yielded no results...\n'
-    else:
-        browser.execute_script("arguments[0].click();", sds_checkmark[0])
-    sleep(2)
-
-    soup = BeautifulSoup(browser.page_source, 'html.parser')
-    all_tags = soup.find_all('a')
-    sds_tags = [tag['href'] for tag in all_tags if 'SDS' in tag.get('href', '')]
-    result = sds_tags[0]
-    return f'\nResult from the {source}:\n{result}\n'
 
 
 def usp_parse(source, item):
@@ -184,6 +163,45 @@ def tci_parse(source, item):
         return f'\nA search of the {source} yielded no results...\n'
 
 
+def trc_parse(source, item):
+    browser = webdriver.Chrome()
+    browser.get(source)
+    sleep(1.5)
+    open_search = browser.find_element(By.CLASS_NAME, 'aa-DetachedSearchButton')
+    browser.execute_script("arguments[0].click();", open_search)
+    sleep(2)
+    search_bar = browser.find_element(By.CLASS_NAME, 'aa-Input')
+    search_bar.send_keys(item)
+    sleep(1.5)
+    # Checking if possible to get quickly sds after insertion the catalog number in search bar
+    sds_quick_access = [elem for elem in browser.find_elements(By.CLASS_NAME, 'product-info') if 'SDS' in elem.get_attribute('href').upper()]
+    if sds_quick_access != [] and sds_quick_access[0].is_enabled():
+        result = sds_quick_access[0].get_attribute('href')
+        return f'\nResult from the {source}:\n{result}\n'
+    else:
+        pass
+
+    search_button = browser.find_element(By.CLASS_NAME, 'aa-SubmitButton')
+    browser.execute_script("arguments[0].click();", search_button)
+    sleep(1.6)
+    research_tools_checkmark = [i for i in browser.find_elements(By.CLASS_NAME, 'form-container') if i.text.split('\n')[0] == 'Research Tools']
+    if research_tools_checkmark != [] and research_tools_checkmark[0].is_enabled():
+        browser.execute_script("arguments[0].click();", research_tools_checkmark[0])
+        sleep(1.6)
+    sds_checkmark = [i for i in browser.find_elements(By.CLASS_NAME, 'form-container') if i.text.split('\n')[0] == 'SDS']
+    if sds_checkmark == [] or sds_checkmark[0].text.split('\n')[1] == '0':
+        return f'\nA search of the {source} yielded no results...\n'
+    else:
+        browser.execute_script("arguments[0].click();", sds_checkmark[0])
+        sleep(2)
+
+    soup = BeautifulSoup(browser.page_source, 'html.parser')
+    all_tags = soup.find_all('a')
+    sds_tags = [tag['href'] for tag in all_tags if 'SDS' in tag.get('href', '')]
+    result = sds_tags[0]
+    return f'\nResult from the {source}:\n{result}\n'
+
+
 def progen_parse(source, item):
     browser = webdriver.Chrome()
     browser.get(source)
@@ -234,7 +252,7 @@ def honeywell_parse(source, item):
         return f'\nA search of the {source} yielded no results...\n'
 
 
-def biophen_parse(source, item):
+def aniara_parse(source, item):
     browser = webdriver.Chrome()
     browser.get(source)
     sleep(1.5)
@@ -372,39 +390,40 @@ def vwr_parse(source, item):
 
 def main(item):
     print(f'\t\t\tWelcome! Searching for an item -> {item}')
-    #print(sigma_parse(urls_db[0], item))
-    #print(lgc_parse(urls_db[1], item))
-    #print(usp_parse(urls_db[2], item))
-    #print(abcam_parse(urls_db[3], item))
-    #print(tci_parse(urls_db[4], item))
-    #print(progen_parse(urls_db[5], item))
-    #print(honeywell_parse(urls_db[6], item))
-    #print(biophen_parse(urls_db[7], item))
-    #print(biorad_parse(urls_db[8], item))
-    #print(edqm_parse(urls_db[9], item))
-    #print(chemicalsafety_parse(urls_db[10], item)) # search by item name
-    print(vwr_parse(urls_db[11], item))
+    #print(sigma_parse(urls_db['sigma_parse'], item)) # search by Sigma, Merc etc.
+    print(cymitquimica_parse(urls_db['cymitquimica_parse'], item)) # search by TCI, TRC, TLC, USP, EDQM, Reagecon, Biosynth, Mikromol etc.
+    #print(usp_parse(urls_db['usp_parse'], item))
+    #print(abcam_parse(urls_db['abcam_parse'], item))
+    #print(tci_parse(urls_db['tci_parse'], item))
+    #print(trc_parse(urls_db['trc_parse'], item))
+    #print(progen_parse(urls_db['progen_parse'], item))
+    #print(honeywell_parse(urls_db['honeywell_parse'], item))
+    #print(aniara_parse(urls_db['aniara_parse'], item)) # search by Biophen
+    #print(biorad_parse(urls_db['biorad_parse'], item))
+    #print(edqm_parse(urls_db['edqm_parse'], item))
+    #print(chemicalsafety_parse(urls_db['chemicalsafety_parse'], item)) # search by product name istead of catalog
+    #print(vwr_parse(urls_db['vwr_parse'], item))
     pass
 
 
-urls_db = [
-    'https://www.sigmaaldrich.com',
-    'https://www.lgcstandards.com/US/en/',
-    'https://store.usp.org/',
-    'https://www.abcam.com/',
-    'https://www.tcichemicals.com/US/en',
-    'https://www.progen.com',
-    'https://lab.honeywell.com/en/sds',
-    'https://www.aniara.com/product-documentation.html',
-    'https://www.bio-rad.com/',
-    'https://crs.edqm.eu/',
-    'https://chemicalsafety.com/sds-search',
-    'https://uk.vwr.com/store/search/searchMSDS.jsp',
-]
+urls_db = {
+    'sigma_parse': 'https://www.sigmaaldrich.com',
+    'cymitquimica_parse': 'https://cymitquimica.com',
+    'usp_parse': 'https://store.usp.org/',
+    'abcam_parse': 'https://www.abcam.com/',
+    'tci_parse': 'https://www.tcichemicals.com/US/en',
+    'trc_parse': 'https://www.lgcstandards.com/US/en/',
+    'progen_parse': 'https://www.progen.com',
+    'honeywell_parse': 'https://lab.honeywell.com/en/sds',
+    'aniara_parse': 'https://www.aniara.com/product-documentation.html',
+    'biorad_parse': 'https://www.bio-rad.com/',
+    'edqm_parse': 'https://crs.edqm.eu/',
+    'chemicalsafety_parse': 'https://chemicalsafety.com/sds-search',
+    'vwr_parse': 'https://uk.vwr.com/store/search/searchMSDS.jsp',
+}
 
-test_items = ['27727.231', 'Formaldehyd', 'P2660000', 'ab150686', 'MM0084.01-0025', 'TRC-N424598-5G', '150495']
+test_items = ['MA00834', 'Ammonium acetate ', '27727.231', 'TRC-N424598-5G', '150495']
 
-# https://cymitquimica.com for TCI, Mikromol etc.
 # https://www.bdbiosciences.com to source list
 
 #x = input('Enter the catalog number: ')
