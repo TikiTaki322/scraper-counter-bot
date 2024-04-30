@@ -12,7 +12,6 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import NoSuchElementException
-from selenium.webdriver.support import expected_conditions as EC
 
 
 def sigma_parse(source, item):
@@ -37,9 +36,9 @@ def sigma_parse(source, item):
 
     try:
         sds_button = browser.find_element(By.CLASS_NAME, 'MuiTypography-colorSecondary')
-        sds_button.click()
+        browser.execute_script("arguments[0].click();", sds_button)
         sleep(1.5)
-    except:
+    except NoSuchElementException:
         return f'\nA search of the {source} yielded no results...\n'
 
     soup = BeautifulSoup(browser.page_source, 'html.parser')
@@ -110,7 +109,8 @@ def abcam_parse(source, item):
     search_button.click()
     sleep(2)
     description_menu = [elem for elem in browser.find_elements(By.CLASS_NAME, 'h3') if 'Datasheets and documents' in elem.text]
-    if description_menu != [] and description_menu[0].is_enabled():
+
+    try:
         browser.execute_script("arguments[0].click();", description_menu[0])
         sleep(0.3)
         # Maybe better not specify exact country. If it will trigger an errors, need to change the code
@@ -132,7 +132,7 @@ def abcam_parse(source, item):
             counter += 1
             sleep(0.5)
         return ''
-    else:
+    except (NoSuchElementException, IndexError):
         return f'\nA search of the {source} yielded no results...\n'
 
 
@@ -388,10 +388,39 @@ def vwr_parse(source, item):
         return f'\nA search of the {source} yielded no results...\n'
 
 
+def bdbiosciences_parse(source, item):
+    browser = webdriver.Chrome()
+    browser.get(source)
+    sleep(1.5)
+    search_icon = browser.find_element(By.CLASS_NAME, 'bdb-header__search-nav-link')
+    search_icon.click()
+    sleep(1)
+    search_bar = browser.find_element(By.ID, 'searchModal').find_element(By.TAG_NAME, 'input')
+    search_bar.send_keys(item, Keys.RETURN)
+    sleep(1.5)
+
+    try:
+        item_page = browser.find_element(By.CLASS_NAME, 'card-title')
+        browser.execute_script("arguments[0].click();", item_page)
+        sleep(1.5)
+        sds_button = browser.find_element(By.LINK_TEXT, 'Safety Data Sheet')
+        browser.execute_script("arguments[0].click();", sds_button)
+        sleep(1.5)
+        lang_popup = browser.find_element(By.CLASS_NAME, 'data-sheets-container_multi-lang-popup').find_element(By.CLASS_NAME, 'btn')
+        browser.execute_script("arguments[0].click();", lang_popup)
+        sleep(1.5)
+        all_open_tabs = browser.window_handles
+        browser.switch_to.window(all_open_tabs[-1])
+        result = browser.current_url
+        return f'\nResult from the {source}:\n{result}\n'
+    except NoSuchElementException:
+        return f'\nA search of the {source} yielded no results...\n'
+
+
 def main(item):
     print(f'\t\t\tWelcome! Searching for an item -> {item}')
-    #print(sigma_parse(urls_db['sigma_parse'], item)) # search by Sigma, Merc etc.
-    print(cymitquimica_parse(urls_db['cymitquimica_parse'], item)) # search by TCI, TRC, TLC, USP, EDQM, Reagecon, Biosynth, Mikromol etc.
+    print(sigma_parse(urls_db['sigma_parse'], item)) # search by Sigma, Supelco, Merc etc.
+    #print(cymitquimica_parse(urls_db['cymitquimica_parse'], item)) # search by TCI, TRC, TLC, USP, EDQM, Reagecon, Biosynth, Mikromol etc.
     #print(usp_parse(urls_db['usp_parse'], item))
     #print(abcam_parse(urls_db['abcam_parse'], item))
     #print(tci_parse(urls_db['tci_parse'], item))
@@ -402,7 +431,8 @@ def main(item):
     #print(biorad_parse(urls_db['biorad_parse'], item))
     #print(edqm_parse(urls_db['edqm_parse'], item))
     #print(chemicalsafety_parse(urls_db['chemicalsafety_parse'], item)) # search by product name istead of catalog
-    #print(vwr_parse(urls_db['vwr_parse'], item))
+    #print(vwr_parse(urls_db['vwr_parse'], item)) # search for Roshe, VWR
+    #print(bdbiosciences_parse(urls_db['bdbiosciences_parse'], item)) # search for BD Biosciences
     pass
 
 
@@ -420,13 +450,11 @@ urls_db = {
     'edqm_parse': 'https://crs.edqm.eu/',
     'chemicalsafety_parse': 'https://chemicalsafety.com/sds-search',
     'vwr_parse': 'https://uk.vwr.com/store/search/searchMSDS.jsp',
+    'bdbiosciences_parse': 'https://www.bdbiosciences.com',
 }
 
-test_items = ['MA00834', 'Ammonium acetate ', '27727.231', 'TRC-N424598-5G', '150495']
+test_items = ['']
 
-# https://www.bdbiosciences.com to source list
-
-#x = input('Enter the catalog number: ')
-#main(x)
-
-main(test_items[0])
+flag = 0
+data = input('Enter the catalog number: ') if flag else test_items[0]
+main(data)
