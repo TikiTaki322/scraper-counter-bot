@@ -6,7 +6,7 @@
 - **[Setup](https://github.com/TikiTaki322/scraper-counter-bot#setup)**
 
 ## General information
-This repository contains the code of a Telegram bot designed to search for SDS documents and calculate cargo weight. It simplifies enterprise workflow by automating operational processes.
+Telegram bot for automating search and classification of hazardous substances with weight calculations and asynchronous architecture. Based on real business processes of a chemical enterprise, where it was used daily as a working tool.
 
 ## Technologies
 #### The technologies used in this project include:
